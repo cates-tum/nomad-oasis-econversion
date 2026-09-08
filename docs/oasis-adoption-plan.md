@@ -216,7 +216,7 @@ the NORTH-jupyter plugin entry point, set `meta.deployment_url` /
   RabbitMQ); central user management; no NORTH
 - [x] `docker compose up`; reach the GUI at `http://localhost/nomad-oasis/gui/`;
   logged in with a central NOMAD account
-- [ ] Commit the working baseline
+- [x] Commit the working baseline (`15a439b`, not pushed)
 
 ### Phase 1: data in via shipped parsers
 - Enable one or two built-in example uploads or a shipped parser (tabular or CSV,
