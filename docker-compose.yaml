@@ -24,7 +24,9 @@ services:
   # the user data db
   mongo:
     restart: unless-stopped
-    image: docker.io/mongo:8.0
+    # ponytail: mongo 8.0 aborts on kernel 6.19-7.0.13 (SERVER-121912); VM runs 7.0.0.
+    # Back to 8.0 once the VM kernel is >= 7.0.14.
+    image: docker.io/mongo:7.0
     container_name: nomad_oasis_mongo
     environment:
       - MONGO_DATA_DIR=/data/db
@@ -145,7 +147,7 @@ services:
       mongo:
         condition: service_healthy
     volumes:
-      # - ./configs/nomad.yaml:/app/nomad.yaml
+      - ./configs/nomad.yaml:/app/nomad.yaml
       - ./.volumes/fs:/app/.volumes/fs
     command: python -m nomad.cli admin run action-internal-worker
     healthcheck:
@@ -160,7 +162,7 @@ services:
       retries: 5
       start_period: 15s
     deploy:
-      replicas: 4
+      replicas: 1 # local prototype; template default is 4
       resources:
         limits:
           cpus: "4.0" # Maximum 4 CPU cores
@@ -279,7 +281,7 @@ services:
       mongo:
         condition: service_healthy
     volumes:
-      # - ./configs/nomad.yaml:/app/nomad.yaml
+      - ./configs/nomad.yaml:/app/nomad.yaml
       - ./.volumes/fs:/app/.volumes/fs
     command: python -m nomad.cli admin run app --with-gui --gunicorn --host 0.0.0.0 --workers 2
     healthcheck:
@@ -371,8 +373,6 @@ services:
         condition: service_healthy
       worker:
         condition: service_started # TODO: service_healthy
-      north:
-        condition: service_healthy
     ports:
       - 80:80
       - 443:443

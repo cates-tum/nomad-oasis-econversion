@@ -6,17 +6,10 @@ oasis:
   is_oasis: true
   uses_central_user_management: true
 
-plugins:
-  entry_points:
-    options:
-      nomad_north_jupyter.north_tools:jupyter:
-        north_tool:
-          image: ghcr.io/cates-tum/nomad-oasis-econversion/jupyter:main
-
 meta:
   deployment: "oasis"
-  deployment_url: "https://my-oasis.org/api"
-  maintainer_email: "me@my-oasis.org"
+  deployment_url: "http://localhost/nomad-oasis/api"
+  maintainer_email: "cihan.ates.89@gmail.com"
 
 logstash:
   enabled: false
@@ -32,5 +25,4 @@ elastic:
   materials_index: nomad_oasis_materials_v1
 
 north:
-  enabled: true
-  enable_new_hub_api: true
+  enabled: false
