@@ -528,7 +528,7 @@ plugins, so only three parsers are active:
 |---|---|---|---|
 | `parsers/tabular` | 0 | `.*\.archive\.(csv\|xlsx?)$` | `text/.*` or `application/.*` |
 | `parsers/archive` | -1 | `.*(archive\|metainfo)\.(json\|yaml\|yml)$` | `.*` |
-| `parsers/broken` | 0 | fallback when a file raises during matching |
+| `parsers/broken` | 0 | catch-all | fallback when a file raises during matching |
 
 So in Phases 1 to 4 every entry came from `parsers/archive` matching the
 `*.archive.yaml` mainfile by name. The `tabular_parser` annotations inside
