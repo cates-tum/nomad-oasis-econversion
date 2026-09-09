@@ -106,3 +106,15 @@ Stop: `docker compose down` (add `-v` to also wipe the named volumes).
 - Real findings go back into `docs/oasis-adoption-plan.md`, not just fixed.
 - Commit messages: one plain-English sentence, no prefix format.
 - No em dash in files that get saved or exported. Write "it is", not "it's".
+
+## Session efficiency
+
+- Do not re-read a file already read this session. Use what is in context.
+- Do not paste full file contents or full command output into replies. Quote the
+  few relevant lines and summarize.
+- Prefer `grep` / `head` / `docker compose logs --since` filters over dumping
+  whole files or logs.
+- Default to 2-3 sentence explanations. Expand only when asked.
+- One phase per session where practical. At a phase boundary, suggest `/clear`
+  and rely on `docs/oasis-adoption-plan.md` plus memory as the handoff.
+- Do not restate a plan already in `docs/`. Link to it.
