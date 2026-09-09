@@ -1,0 +1,131 @@
+definitions:
+  name: Grill attempt ELN
+  sections:
+    GrillAttempt:
+      base_sections:
+        - nomad.datamodel.metainfo.eln.ELNMeasurement
+        - nomad.datamodel.data.EntryData
+      description: |
+        One grilling attempt on the grilling bench. Ported from the Nexus
+        grill_red_meat / grill_poultry / grill_fish schemas, collapsed into one
+        section with a protein_class selector.
+      m_annotations:
+        eln:
+          hide:
+            - lab_id
+            - location
+            - method
+            - tags
+            - steps
+            - samples
+            - instruments
+            - measurement_identifiers
+      quantities:
+        cuisine:
+          type: str
+          m_annotations:
+            eln:
+              component: StringEditQuantity
+        protein_class:
+          type:
+            type_kind: Enum
+            type_data:
+              - red_meat
+              - poultry
+              - fish
+              - vegetable
+          m_annotations:
+            eln:
+              component: EnumEditQuantity
+        cut:
+          type: str
+          description: e.g. ribeye, thigh, fillet. Free text, protein dependent.
+          m_annotations:
+            eln:
+              component: StringEditQuantity
+        heat_source:
+          type:
+            type_kind: Enum
+            type_data:
+              - grill
+              - pan
+              - oven
+          m_annotations:
+            eln:
+              component: RadioEnumEditQuantity
+        grill_temp:
+          type: np.float64
+          unit: celsius
+          description: Grill surface temperature.
+          m_annotations:
+            eln:
+              component: NumberEditQuantity
+              defaultDisplayUnit: celsius
+        cook_time:
+          type: np.float64
+          unit: minute
+          m_annotations:
+            eln:
+              component: NumberEditQuantity
+              defaultDisplayUnit: minute
+        internal_temp:
+          type: np.float64
+          unit: celsius
+          description: Final internal temperature.
+          m_annotations:
+            eln:
+              component: NumberEditQuantity
+              defaultDisplayUnit: celsius
+        usda_safe_min:
+          type: np.float64
+          unit: celsius
+          description: >
+            USDA minimum safe internal temperature for this protein class
+            (red meat 63, poultry 74, fish 63).
+          m_annotations:
+            eln:
+              component: NumberEditQuantity
+              defaultDisplayUnit: celsius
+        rested_min:
+          type: np.float64
+          unit: minute
+          description: Rest time after cooking.
+          m_annotations:
+            eln:
+              component: NumberEditQuantity
+              defaultDisplayUnit: minute
+        doneness:
+          type:
+            type_kind: Enum
+            type_data:
+              - rare
+              - medium_rare
+              - medium
+              - medium_well
+              - well_done
+              - not_applicable
+          m_annotations:
+            eln:
+              component: EnumEditQuantity
+        char_level:
+          type: np.float64
+          description: Char level, 0 to 100.
+          m_annotations:
+            eln:
+              component: NumberEditQuantity
+        juiciness_score:
+          type: np.float64
+          description: Juiciness, 0 to 100.
+          m_annotations:
+            eln:
+              component: NumberEditQuantity
+        outcome:
+          type:
+            type_kind: Enum
+            type_data:
+              - undercooked
+              - perfect
+              - overcooked
+          m_annotations:
+            eln:
+              component: RadioEnumEditQuantity
