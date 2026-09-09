@@ -21,7 +21,10 @@ env:
   NOMAD_DOCS_REPO_REF: ""
   # If you want to skip the tests for some plugins, add them here as a single string where
   # each plugin is separated by whitespace
-  PLUGIN_TESTS_PLUGINS_TO_SKIP: ""
+  # nomad_econversion_plugins ships no pytest suite (hand-written schema, ~6 files), so
+  # nomad-plugin-tests fails with "No module named pytest". Skip until it has real tests.
+  # ponytail: remove from this list once the plugin repo adds pytest + a test module.
+  PLUGIN_TESTS_PLUGINS_TO_SKIP: "nomad_econversion_plugins"
 
 permissions:
   contents: write
@@ -162,7 +165,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           target: ${{ matrix.target }}
-          push: true
+          # Publish to GHCR only on version tags. On branch pushes the image is
+          # built (to catch Dockerfile breakage) but not pushed, so CI does not
+          # need package write access. During prototyping the image is built
+          # locally by hand; see docs/oasis-adoption-plan.md.
+          push: ${{ github.ref_type == 'tag' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
@@ -176,9 +183,12 @@ jobs:
       jupyter_image: ${{ env.jupyter_IMAGE }}
 
   # Job 4: Run example upload tests and entrypoint tests
+  # Pulls the images the build job pushed, so it can only run when they were
+  # published, i.e. on version tags.
   run_tests:
     name: Run example upload tests and entrypoint tests
     needs: build
+    if: ${{ github.ref_type == 'tag' }}
     runs-on: ubuntu-latest
     env:
       APP_IMAGE: ${{ needs.build.outputs.app_image }}
