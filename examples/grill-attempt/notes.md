@@ -47,9 +47,17 @@ Own quantities:
    fields accept a unit.
 4. Save. The entry's Data tab shows the filled section.
 
-## Next in Phase 2
+## Part (b): row mode
 
-Row-mode tabular variant: a schema with a `data_file` quantity and
-`tabular_parser` in `mapping_mode: row`, `file_mode: multiple_new_entries`, so
-each row of `../grill-sessions/grill_sessions.csv` becomes its own
-`GrillAttempt` entry.
+`grill_attempt_table.archive.yaml` plus `grill_sessions.csv`. Section
+`GrillAttemptRow` on `EntryData` + `TableData`, `data_file` with
+`tabular_parser` `mapping_mode: row`, `file_mode: multiple_new_entries`,
+`sections: ['#root']`. `more.label_quantity: session_id` names each entry.
+
+Upload both files. Result: **12 entries** from the 12 CSV rows.
+- The **first row (GS-001) fills the trigger entry itself**
+  (`grill_attempt_table.archive.yaml`).
+- Rows 2..12 become new entries, mainfile
+  `GS-00N_<idx>.GrillAttemptRow.archive.yaml`.
+- Row-mode quantities are **scalars**, one value per entry (contrast Phase 1
+  column mode, where the columns are arrays on one entry).

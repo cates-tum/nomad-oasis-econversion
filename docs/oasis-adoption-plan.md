@@ -273,17 +273,35 @@ the NORTH-jupyter plugin entry point, set `meta.deployment_url` /
 - [x] Explore lists the entry; filter chips map to indexed fields.
 - [x] Findings recorded above and in memory.
 
-### Phase 2: a custom type as a YAML ELN schema
-- Pick the pilot type. Default: port one Nexus schema (a grill or fermentation
-  "attempt") so the keynote narrative stays aligned. Alternative: a real pilot
-  lab's simple CSV export.
-- Write an `archive.yaml` ELN schema: sections, `base_sections` from
-  `nomad.datamodel.metainfo.eln`, quantities with types and units, `eln`
-  component widgets, `hide` for unwanted inherited fields
-- Upload it as data; create one entry through the generated form
-- Add a `tabular_parser` annotation on a `data_file` quantity; ingest a CSV in
-  column mode, then in row mode
-- Iterate the schema until the form and the parsed data look right
+### Phase 2: a custom type as a YAML ELN schema  [done 2026-09-09]
+- [x] Pilot type: the Nexus grill attempt, collapsed from `grill_red_meat` /
+  `grill_poultry` / `grill_fish` + `base_recipe_attempt` into one section.
+- [x] `examples/grill-attempt/grill_attempt.archive.yaml`: section
+  `GrillAttempt` on `nomad.datamodel.metainfo.eln.ELNMeasurement` +
+  `EntryData`, 13 quantities with `eln` component widgets, `eln.hide` for
+  inherited `lab_id` / `location` / `method` / `tags` and the `steps` /
+  `samples` / `instruments` / `measurement_identifiers` sub-sections.
+- [x] Uploaded the schema; created an entry with **Create from schema** (the
+  GUI button is not "Create entry"); generated form renders, enums as
+  dropdowns, hidden fields gone. Verified the saved archive.
+- [x] Column mode already covered in Phase 1 (`grill-sessions`, arrays on one
+  entry). Row mode: `examples/grill-attempt/grill_attempt_table.archive.yaml`
+  (`GrillAttemptRow`, `mapping_mode: row`, `file_mode: multiple_new_entries`)
+  plus the CSV -> 12 entries, scalars, named by `session_id`.
+- [x] Iterated: `date` stays `str` (Phase 1 finding), schemas load clean.
+
+Phase 2 notes:
+- `eln.hide` at section level hides both inherited quantities and inherited
+  sub-sections.
+- Enum quantity syntax: `type: {type_kind: Enum, type_data: [...]}`.
+  `EnumEditQuantity` renders as a dropdown; `RadioEnumEditQuantity` also
+  rendered as a dropdown in 1.4.3.
+- Uploaded schemas are visible across all uploads, so the Create-from-schema
+  picker lists every section you have ever uploaded. Easy to pick the wrong
+  one; check the source file name.
+- Row mode: the **first CSV row fills the trigger entry itself**; rows 2..N
+  become new entries (`<label>_<idx>.<Section>.archive.yaml`). N rows -> N
+  entries total.
 
 ### Phase 3: promote the type to a schema-package plugin
 - Scaffold a plugin package: `src/<pkg>/schema_packages/`, `pyproject.toml` with

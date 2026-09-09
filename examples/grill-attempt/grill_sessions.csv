@@ -1,0 +1,13 @@
+session_id,date,protein,grill_temp_c,cook_time_min,internal_temp_c,rested_min,outcome
+GS-001,2026-02-03,beef,232,8,54,6,perfect
+GS-002,2026-02-07,beef,246,11,67,5,overcooked
+GS-003,2026-02-10,chicken,210,18,74,4,perfect
+GS-004,2026-02-14,pork,218,14,63,8,perfect
+GS-005,2026-02-17,fish,193,6,52,2,undercooked
+GS-006,2026-02-21,vegetable,204,9,0,0,perfect
+GS-007,2026-02-24,beef,238,7,49,6,undercooked
+GS-008,2026-02-28,chicken,215,20,78,5,overcooked
+GS-009,2026-03-03,pork,224,16,66,7,perfect
+GS-010,2026-03-07,fish,199,7,58,3,perfect
+GS-011,2026-03-10,beef,241,10,58,6,perfect
+GS-012,2026-03-14,chicken,207,17,72,4,perfect

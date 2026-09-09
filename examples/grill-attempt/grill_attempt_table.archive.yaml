@@ -1,0 +1,78 @@
+definitions:
+  name: Grill attempts from a table (row mode)
+  sections:
+    GrillAttemptRow:
+      base_sections:
+        - nomad.datamodel.data.EntryData
+        - nomad.parsing.tabular.TableData
+      description: |
+        Row-mode tabular demo. Each row of grill_sessions.csv becomes its own
+        GrillAttemptRow entry. Scalar quantities, not arrays. Sibling of the
+        hand-entry GrillAttempt schema.
+      more:
+        label_quantity: session_id
+      quantities:
+        data_file:
+          type: str
+          default: grill_sessions.csv
+          m_annotations:
+            tabular_parser:
+              parsing_options:
+                comment: '#'
+              mapping_options:
+                - mapping_mode: row
+                  file_mode: multiple_new_entries
+                  sections:
+                    - '#root'
+            browser:
+              adaptor: RawFileAdaptor
+            eln:
+              component: FileEditQuantity
+        session_id:
+          type: str
+          m_annotations:
+            tabular:
+              name: session_id
+        date:
+          type: str
+          m_annotations:
+            tabular:
+              name: date
+        protein:
+          type: str
+          m_annotations:
+            tabular:
+              name: protein
+        grill_temp:
+          type: np.float64
+          unit: celsius
+          m_annotations:
+            tabular:
+              name: grill_temp_c
+        cook_time:
+          type: np.float64
+          unit: minute
+          m_annotations:
+            tabular:
+              name: cook_time_min
+        internal_temp:
+          type: np.float64
+          unit: celsius
+          m_annotations:
+            tabular:
+              name: internal_temp_c
+        rested_min:
+          type: np.float64
+          unit: minute
+          m_annotations:
+            tabular:
+              name: rested_min
+        outcome:
+          type: str
+          m_annotations:
+            tabular:
+              name: outcome
+
+data:
+  m_def: GrillAttemptRow
+  data_file: grill_sessions.csv
