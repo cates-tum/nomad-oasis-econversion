@@ -287,6 +287,15 @@ services:
     volumes:
       - ./configs/nomad.yaml:/app/nomad.yaml
       - ./.volumes/fs:/app/.volumes/fs
+      # eConversion Nexus branding: replace the stock GUI logo files. The app
+      # copies this folder into run/gui_configured on start, so the mounts must
+      # sit on the source path, not the served copy.
+      - ./configs/branding/nomad-text.png:/opt/venv/lib/python3.12/site-packages/nomad/app/static/gui/nomad-text.png:ro
+      - ./configs/branding/nomad-oasis.png:/opt/venv/lib/python3.12/site-packages/nomad/app/static/gui/nomad-oasis.png:ro
+      - ./configs/branding/nomad.png:/opt/venv/lib/python3.12/site-packages/nomad/app/static/gui/nomad.png:ro
+      - ./configs/branding/favicon.png:/opt/venv/lib/python3.12/site-packages/nomad/app/static/gui/favicon.png:ro
+      - ./configs/branding/favicon-hres.png:/opt/venv/lib/python3.12/site-packages/nomad/app/static/gui/favicon-hres.png:ro
+      - ./configs/branding/favicon.ico:/opt/venv/lib/python3.12/site-packages/nomad/app/static/gui/favicon.ico:ro
     command: python -m nomad.cli admin run app --with-gui --gunicorn --host 0.0.0.0 --workers 2
     healthcheck:
       test:

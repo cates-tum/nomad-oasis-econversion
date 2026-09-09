@@ -27,6 +27,13 @@ location ~ /nomad-oasis\/?(gui)?$ {
     rewrite ^ /nomad-oasis/gui/ permanent;
 }
 
+# Land on the eConversion Nexus app instead of the stock NOMAD About page.
+# Exact match, so only the bare GUI root redirects; all deeper routes and
+# assets fall through to the prefix block below.
+location = /nomad-oasis/gui/ {
+    return 302 /nomad-oasis/gui/search/grill-attempts;
+}
+
 location /nomad-oasis/gui/ {
     proxy_intercept_errors on;
     error_page 404 = @redirect_to_index;

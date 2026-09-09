@@ -433,6 +433,29 @@ Phase 4 notes:
 - Grill temp / internal temp columns display in celsius as entered (180-260
   range), no unit misread.
 
+Phase 4 branding (2026-09-09), GUI identity as "eConversion Nexus":
+- **Only three things are config-adjustable.** `ui.theme.title` (browser tab
+  name) is the single branding string in the 1.4.3 config model. The landing
+  page is hardcoded to the About page; skipped with an nginx `location = ...`
+  exact-match 302 from `/nomad-oasis/gui/` to
+  `/nomad-oasis/gui/search/grill-attempts` (exact match, so deeper routes and
+  assets fall through). The About page body text is compiled into hashed JS
+  chunks, not changed without forking the GUI, out of scope.
+- **Logos are plain files, swappable without a rebuild.** `nomad-text.png`
+  (loading screen), `nomad-oasis.png` (About page), `nomad.png` (nav bar),
+  `favicon.png` / `favicon-hres.png` / `favicon.ico`. On `app` start,
+  `nomad.cli admin run app --with-gui` does `rmtree` + `copytree` of
+  `.../site-packages/nomad/app/static/gui` into `run/gui_configured` and only
+  string-substitutes the base path. So bind mounts must sit on the **source**
+  path (`.../static/gui/<file>`), not the served copy; they then survive every
+  restart. Six `:ro` mounts added to the `app` service.
+  `scripts/make-branding.py` regenerates the placeholder text marks into
+  `configs/branding/`.
+- **The GUI service worker caches assets hard.** After a logo or favicon
+  change, a normal reload keeps the old image. Unregister the service worker
+  (Firefox: `about:debugging` > This Firefox > Service Workers) and clear the
+  site data, or just use a private window.
+
 ### Phase 5: capture what you learned
 - [x] `CLAUDE.md` for the repo: layout, how to add a plugin, how to rebuild the
   image. Written in Phase 0, current.

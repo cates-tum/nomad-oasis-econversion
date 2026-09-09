@@ -28,6 +28,8 @@ north:
   enabled: false
 
 ui:
+  theme:
+    title: eConversion Nexus
   apps:
     options:
       grill_attempts:
