@@ -142,6 +142,8 @@ services:
     depends_on:
       temporal:
         condition: service_healthy
+      temporal-create-namespace:
+        condition: service_completed_successfully
       elastic:
         condition: service_healthy
       mongo:
@@ -276,6 +278,8 @@ services:
     depends_on:
       temporal:
         condition: service_healthy
+      temporal-create-namespace:
+        condition: service_completed_successfully
       elastic:
         condition: service_healthy
       mongo:

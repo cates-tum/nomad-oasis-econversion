@@ -201,6 +201,15 @@ ships. Recorded here so later phases start from reality.
 11. **Version running:** NOMAD 1.4.3, `oasis: true`. Shipped parsers include
     `tabular`; three example uploads are available (Tabular Data, Tailored RDM,
     Data Management Framework Tutorial).
+12. **`temporal-create-namespace` was not in the dependency chain** (found at
+    the start of Phase 1, 2026-09-09). `docker compose up -d app worker proxy`
+    started `temporal` and `temporal-setup-db` but never the namespace job, so
+    the `default` Temporal namespace did not exist. The GUI and login worked,
+    but any Temporal workflow (upload processing, upload delete) failed with
+    `Namespace default is not found` and a 500. Fix: added
+    `temporal-create-namespace: condition: service_completed_successfully` to
+    the `depends_on` of both `app` and `worker`, so any `up` that starts them
+    also runs the namespace job first. The job is idempotent across `down`/`up`.
 
 Config trims applied in `configs/nomad.yaml`: `north.enabled: false`, removed
 the NORTH-jupyter plugin entry point, set `meta.deployment_url` /
