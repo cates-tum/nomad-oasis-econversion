@@ -26,3 +26,72 @@ elastic:
 
 north:
   enabled: false
+
+ui:
+  apps:
+    options:
+      grill_attempts:
+        label: Grill Attempts
+        path: grill-attempts
+        category: Use Cases
+        description: Grilling attempts recorded with the GrillAttempt schema plugin.
+        readme: |
+          Every entry of the `GrillAttempt` schema
+          (`nomad_econversion_plugins.schema_packages.grill.GrillAttempt`),
+          promoted from the Phase 2 YAML prototype. Columns and filters below
+          target the schema's own quantities.
+        filters_locked:
+          section_defs.definition_qualified_name: nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+        columns:
+          - search_quantity: entry_name
+            selected: true
+          - search_quantity: data.protein_class#nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+            title: Protein class
+            selected: true
+          - search_quantity: data.heat_source#nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+            title: Heat source
+            selected: true
+          - search_quantity: data.grill_temp#nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+            title: Grill temp
+            selected: true
+          - search_quantity: data.internal_temp#nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+            title: Internal temp
+            selected: true
+          - search_quantity: data.doneness#nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+            title: Doneness
+            selected: true
+          - search_quantity: data.outcome#nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+            title: Outcome
+            selected: true
+          - search_quantity: upload_create_time
+            selected: false
+        menu:
+          items:
+            - type: terms
+              search_quantity: data.protein_class#nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+              title: Protein class
+              width: 12
+            - type: terms
+              search_quantity: data.heat_source#nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+              title: Heat source
+              width: 12
+            - type: terms
+              search_quantity: data.outcome#nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+              title: Outcome
+              width: 12
+            - type: histogram
+              x: data.grill_temp#nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+              title: Grill temp
+              width: 12
+        dashboard:
+          widgets:
+            - type: terms
+              title: Outcome
+              search_quantity: data.outcome#nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+              scale: linear
+              layout:
+                sm: { h: 6, w: 6, x: 0, y: 0 }
+                md: { h: 6, w: 6, x: 0, y: 0 }
+                lg: { h: 6, w: 6, x: 0, y: 0 }
+                xl: { h: 6, w: 6, x: 0, y: 0 }
+                xxl: { h: 6, w: 6, x: 0, y: 0 }

@@ -15,8 +15,10 @@ each by git tag in `pyproject.toml`.
 
 - `configs/nomad.yaml` single config file: hostname, base path, DB and index
   names, active plugins, `ui:`, auth. Baked into the image at build; also
-  bind-mounted in compose (`app` and `worker`) so edits apply on
-  `docker compose restart app worker`, no rebuild.
+  bind-mounted in compose (`app` and `worker`) so edits apply with
+  `docker compose up -d --no-deps --force-recreate app worker`, no rebuild. A
+  plain `restart` is not enough: an editor save swaps the file inode and the
+  container keeps the old one (Phase 4 note).
 - `configs/nginx_base_conf` shared nginx location blocks. The
   `/nomad-oasis/north/` block is commented out (NORTH is off).
 - `docker-compose.yaml` the stack. Long-running services we run locally:
@@ -70,7 +72,9 @@ GUI: `http://localhost/nomad-oasis/gui/`. Health: `curl localhost/nomad-oasis/al
 Login goes through the central `nomad-lab.eu` Keycloak
 (`oasis.uses_central_user_management: true`), no local Keycloak.
 
-Restart after a `configs/nomad.yaml` change: `docker compose restart app worker`.
+Apply a `configs/nomad.yaml` change:
+`docker compose up -d --no-deps --force-recreate app worker` (a plain `restart`
+can keep the pre-edit file; see the Layout note).
 Stop: `docker compose down` (add `-v` to also wipe the named volumes).
 
 ## Environment quirks (this VM)

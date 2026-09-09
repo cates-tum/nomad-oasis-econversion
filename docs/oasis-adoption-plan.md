@@ -32,7 +32,7 @@ over Python everywhere else.
 | Plugin pinning | `git+https://...@vX.Y.Z` tag in the distro `pyproject.toml`, `uv lock` to pin the commit | Reproducible; public repo needs no build credentials. |
 | Config edits | `configs/nomad.yaml` bind-mounted into `app`/`worker` for `docker compose restart` iteration | Baked into the image at build otherwise. |
 
-## Current state (end of Phase 3, 2026-09-09)
+## Current state (end of Phase 4, 2026-09-09)
 
 - Distro repo `cates-tum/nomad-oasis-econversion` (private), at tag `v0.1.0`.
   Local image `ghcr.io/cates-tum/nomad-oasis-econversion:main` built with the
@@ -41,10 +41,16 @@ over Python everywhere else.
 - Plugin repo `cates-tum/nomad-econversion-plugins` (public), tag `v0.1.0`
   (`dcb6e210`). One entry point: `grill_attempt` -> `GrillAttempt` schema.
 - `examples/` holds the YAML prototypes: `grill-sessions/` (tabular column
-  mode) and `grill-attempt/` (ELN form + row-mode tabular).
-- Phases 0-3 done. Phase 4 (custom app) and Phase 5 (capture) pending.
-- Open item: Elasticsearch entries index accumulated more docs than MongoDB has
-  entries. Check whether upload delete fully cleans the index.
+  mode) and `grill-attempt/` (ELN form + row-mode tabular, plus `app-test/`
+  four data-only archives of the packaged schema, the Phase 4 fixture).
+- Phase 4 done: custom app `grill_attempts` in `configs/nomad.yaml`
+  (`ui.apps.options`), config only, no rebuild. Locked to the packaged schema,
+  seven columns, four filter-menu items, one dashboard widget. Verified in the
+  GUI against five entries.
+- Phases 0-4 done. Phase 5 (capture) is the running record; two sub-items open
+  (parser matching write-up, hosting move).
+- Resolved: the ES-vs-Mongo count mismatch (Phase 1 open item). Both now hold
+  16 docs. No orphaned search docs found; upload delete cleaned up as expected.
 
 ## Oasis as a plant: the components
 
@@ -377,12 +383,55 @@ Phase 3 notes:
   Split a plugin into its own repo only when it needs an external maintainer,
   a divergent release cadence, or has grown large.
 
-### Phase 4: a custom app for the new type
-- Add an app entry point, or `ui.apps` in `nomad.yaml`: preset query filtered to
-  the new schema, chosen columns, a trimmed filter menu, one dashboard widget
-- Make it a menu item; consider it as the landing view
-- Check it against a handful of entries
-- Commit
+### Phase 4: a custom app for the new type  [done 2026-09-09]
+- [x] `ui.apps.options.grill_attempts` in `configs/nomad.yaml` (config only, no
+  rebuild). `filters_locked` on
+  `section_defs.definition_qualified_name = nomad_econversion_plugins.schema_packages.grill.GrillAttempt`.
+  Seven result columns (entry_name plus six `data.*#...` schema quantities),
+  a four-item filter menu (protein_class / heat_source / outcome terms plus a
+  grill_temp histogram), one dashboard terms widget on `outcome`.
+- [x] Appears in the explore menu under category "Use Cases" next to the stock
+  apps. Not set as the landing view (`ui.apps` has no default-app key in 1.4.3;
+  a landing override is a separate `ui` change, deferred).
+- [x] Fixture: `examples/grill-attempt/app-test/`, four data-only
+  `.archive.yaml` entries of the packaged schema, uploaded through the GUI, all
+  `SUCCESS`. Checked the app against those four plus the Phase 3 packaged entry
+  (five total).
+- [x] Commit.
+
+Phase 4 notes:
+- **Custom schema quantities are searchable with no `a_elasticsearch`
+  annotation.** NOMAD 1.4.3 indexes them as dynamic `search_quantities` with id
+  `data.<name>#<section-qualified-name>`. App columns, menu items and widgets
+  reference that full id string. For a promoted schema the qualifier is the
+  stable class path; for a per-upload YAML schema it is
+  `entry_id:<id>.<Section>`, so only promoted schemas get stable app config.
+  This is the concrete payoff of Phase 3.
+- **`filters_locked` on `section_defs.definition_qualified_name`** scopes the
+  app to the packaged schema exactly. It matched the five packaged entries and
+  excluded the Phase 2 YAML `GrillAttempt` entry, as intended.
+- **`ui.apps.options` is additive.** The stock apps (Entries, Calculations,
+  ELN) are `AppEntryPoint` plugin entry points served by
+  `GET /api/v1/apps/entry-points`; the GUI merges them with `ui.apps.options`
+  from `env.js`. `config.ui.apps.options` only ever holds the yaml-defined
+  apps, so nothing stock is lost by defining one.
+- **Menu histogram item uses `x: <search_quantity>`**, not `search_quantity:`
+  (that key is rejected on `MenuItemHistogram`). Terms menu items and dashboard
+  widgets use `search_quantity:`. A dashboard widget needs a `layout:` block
+  with an entry per breakpoint (`sm md lg xl xxl`), each `{h, w, x, y}`.
+- **Single-file bind mount goes stale on edit.** `configs/nomad.yaml` is
+  bind-mounted at `/app/nomad.yaml`. An editor save (VS Code, or a tool) writes
+  a new file and renames it over the old one, so the inode changes; Docker
+  keeps the container pointed at the old inode. `docker compose restart app
+  worker` restarts the process in the same container and still reads the old
+  file. Reliable form:
+  `docker compose up -d --no-deps --force-recreate app worker` (~30 s API
+  downtime). Validate the yaml first, e.g.
+  `docker compose cp configs/nomad.yaml app:/tmp/new.yaml` then a
+  `nomad.config.models.ui.UI(**yaml.safe_load(...)['ui'])` check, so a bad
+  config does not stop the container from coming back. CLAUDE.md updated.
+- Grill temp / internal temp columns display in celsius as entered (180-260
+  range), no unit misread.
 
 ### Phase 5: capture what you learned
 - [x] `CLAUDE.md` for the repo: layout, how to add a plugin, how to rebuild the

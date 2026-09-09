@@ -1,0 +1,17 @@
+data:
+  m_def: nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+  name: Chicken thigh on the grill
+  datetime: '2026-08-05T19:00:00'
+  cuisine: Mediterranean
+  protein_class: poultry
+  cut: thigh
+  heat_source: grill
+  grill_temp: 220
+  cook_time: 12
+  internal_temp: 70
+  usda_safe_min: 74
+  rested_min: 3
+  doneness: not_applicable
+  char_level: 45
+  juiciness_score: 60
+  outcome: undercooked

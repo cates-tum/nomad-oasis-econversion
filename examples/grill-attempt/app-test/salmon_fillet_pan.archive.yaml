@@ -1,0 +1,17 @@
+data:
+  m_def: nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+  name: Salmon fillet in the pan
+  datetime: '2026-08-09T12:15:00'
+  cuisine: Nordic
+  protein_class: fish
+  cut: fillet
+  heat_source: pan
+  grill_temp: 180
+  cook_time: 6
+  internal_temp: 63
+  usda_safe_min: 63
+  rested_min: 2
+  doneness: not_applicable
+  char_level: 15
+  juiciness_score: 75
+  outcome: perfect

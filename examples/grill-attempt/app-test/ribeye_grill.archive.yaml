@@ -1,0 +1,17 @@
+data:
+  m_def: nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+  name: Ribeye on the grill
+  datetime: '2026-08-01T18:30:00'
+  cuisine: American
+  protein_class: red_meat
+  cut: ribeye
+  heat_source: grill
+  grill_temp: 260
+  cook_time: 8
+  internal_temp: 57
+  usda_safe_min: 63
+  rested_min: 5
+  doneness: medium_rare
+  char_level: 35
+  juiciness_score: 80
+  outcome: perfect

@@ -1,0 +1,16 @@
+data:
+  m_def: nomad_econversion_plugins.schema_packages.grill.GrillAttempt
+  name: Zucchini planks in the oven
+  datetime: '2026-08-14T17:45:00'
+  cuisine: Italian
+  protein_class: vegetable
+  cut: planks
+  heat_source: oven
+  grill_temp: 200
+  cook_time: 15
+  internal_temp: 90
+  rested_min: 1
+  doneness: not_applicable
+  char_level: 60
+  juiciness_score: 40
+  outcome: overcooked
