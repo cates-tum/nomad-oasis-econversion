@@ -303,15 +303,41 @@ Phase 2 notes:
   become new entries (`<label>_<idx>.<Section>.archive.yaml`). N rows -> N
   entries total.
 
-### Phase 3: promote the type to a schema-package plugin
-- Scaffold a plugin package: `src/<pkg>/schema_packages/`, `pyproject.toml` with
-  the `nomad.plugin` entry point
-- Move the stable schema from YAML into Python `SchemaPackage` and `Section`
-  classes
-- Register the plugin in the distribution; rebuild the custom image
-- Recreate the entry from the packaged schema; confirm it matches the YAML
-  version
-- Commit; tag a version
+### Phase 3: promote the type to a schema-package plugin  [done 2026-09-09]
+- [x] One shared plugin repo `cates-tum/nomad-econversion-plugins` (public),
+  hand-written, ~6 files. `src/nomad_econversion_plugins/schema_packages/`
+  with `grill.py` (`m_package` + `GrillAttempt` class) and `__init__.py`
+  (`SchemaPackageEntryPoint`). `pyproject.toml`
+  `[project.entry-points.'nomad.plugin'] grill_attempt = ...`. Tagged `v0.1.0`.
+- [x] Ported all 13 quantities from `grill_attempt.archive.yaml` to Python:
+  `class GrillAttempt(ELNMeasurement, EntryData)`,
+  `m_def = Section(a_eln=ELNAnnotation(hide=[...]))`, `Quantity(type=MEnum(...),
+  a_eln=ELNAnnotation(component=ELNComponentEnum...))`, `unit=` /
+  `defaultDisplayUnit=`. `m_package.__init_metainfo__()` at the end.
+- [x] Distro `pyproject.toml` plugins extra:
+  `nomad-econversion-plugins @ git+https://github.com/cates-tum/nomad-econversion-plugins.git@v0.1.0`.
+  `uv lock` (via `ghcr.io/astral-sh/uv:0.9-python3.12-bookworm-slim`, uv is not
+  on the host) pinned it at commit `dcb6e210`. Rebuilt the image.
+- [x] `docker compose up -d`. `api/v1/info` shows `plugin_packages`
+  `nomad_econversion_plugins 0.1.0` and a `schema_package` entry point.
+- [x] Created an entry from the packaged schema in the GUI. Its `data` block
+  matches the Phase 2 YAML entry field-for-field; only `m_def` differs:
+  `nomad_econversion_plugins.schema_packages.grill.GrillAttempt` (stable
+  package ref) instead of a per-upload file path.
+
+Phase 3 notes:
+- The distro Dockerfile builder runs `uv sync --extra plugins` with only
+  `pyproject.toml` / `uv.lock` / `.git` mounted (Dockerfile:83-87). A plugin
+  must be an installable package (PyPI or git URL), never a local path, unless
+  the Dockerfile is changed. Public `git+https@tag` needs no build credentials.
+- `uv.lock` must be regenerated locally before a local build; `uv sync` fails
+  on a stale lock. CI's `update-lockfile` job also does this on push.
+- Iteration loop is slower than YAML: edit `grill.py` -> tag `v0.1.N` in the
+  plugin repo -> bump the `@v0.1.N` ref in the distro -> `uv lock` -> rebuild
+  -> `up`. So prototype a schema in YAML, promote to the package when stable.
+- Repo policy: one shared plugin repo, one entry point per schema/parser.
+  Split a plugin into its own repo only when it needs an external maintainer,
+  a divergent release cadence, or has grown large.
 
 ### Phase 4: a custom app for the new type
 - Add an app entry point, or `ui.apps` in `nomad.yaml`: preset query filtered to
