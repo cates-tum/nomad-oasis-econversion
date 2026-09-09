@@ -261,13 +261,17 @@ the NORTH-jupyter plugin entry point, set `meta.deployment_url` /
   logged in with a central NOMAD account
 - [x] Commit the working baseline (`15a439b`, not pushed)
 
-### Phase 1: data in via shipped parsers
-- Enable one or two built-in example uploads or a shipped parser (tabular or CSV,
-  or a domain example)
-- Upload an example dataset through the GUI; watch it process into entries
-- Inspect one entry: raw file versus archive, the metainfo tree, the search index
-- Try the Explore search and the default apps
-- Record in the memory doc what "processed" actually looks like
+### Phase 1: data in via shipped parsers  [done 2026-09-09]
+- [x] Shipped example uploads do not work here (data files not bundled). Built
+  our own: `examples/grill-sessions/` (CSV + single-file schema/data
+  archive.yaml), tabular parser, column mode.
+- [x] Uploaded through the GUI; watched the worker process it into one entry
+  of type `GrillSessions`.
+- [x] Inspected the entry: raw files (the .yaml and .csv) vs archive (the
+  metainfo tree with 8 filled array quantities); confirmed indexed in
+  `nomad_oasis_entries_v1` (`published: false`).
+- [x] Explore lists the entry; filter chips map to indexed fields.
+- [x] Findings recorded above and in memory.
 
 ### Phase 2: a custom type as a YAML ELN schema
 - Pick the pilot type. Default: port one Nexus schema (a grill or fermentation
