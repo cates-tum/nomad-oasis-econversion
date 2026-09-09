@@ -1,0 +1,83 @@
+definitions:
+  name: Grill sessions tabular demo
+  sections:
+    GrillSessions:
+      base_sections:
+        - nomad.datamodel.data.EntryData
+        - nomad.parsing.tabular.TableData
+      m_annotations:
+        eln:
+      quantities:
+        data_file:
+          type: str
+          default: grill_sessions.csv
+          description: CSV of grill sessions, one row per session.
+          m_annotations:
+            tabular_parser:
+              parsing_options:
+                comment: '#'
+              mapping_options:
+                - mapping_mode: column
+                  file_mode: current_entry
+                  sections:
+                    - '#root'
+            browser:
+              adaptor: RawFileAdaptor
+            eln:
+              component: FileEditQuantity
+        session_id:
+          type: str
+          shape: ['*']
+          m_annotations:
+            tabular:
+              name: session_id
+        date:
+          type: str
+          shape: ['*']
+          m_annotations:
+            tabular:
+              name: date
+        protein:
+          type: str
+          shape: ['*']
+          m_annotations:
+            tabular:
+              name: protein
+        grill_temp_c:
+          type: np.float64
+          shape: ['*']
+          unit: celsius
+          m_annotations:
+            tabular:
+              name: grill_temp_c
+        cook_time_min:
+          type: np.float64
+          shape: ['*']
+          unit: minute
+          m_annotations:
+            tabular:
+              name: cook_time_min
+        internal_temp_c:
+          type: np.float64
+          shape: ['*']
+          unit: celsius
+          m_annotations:
+            tabular:
+              name: internal_temp_c
+        rested_min:
+          type: np.float64
+          shape: ['*']
+          unit: minute
+          m_annotations:
+            tabular:
+              name: rested_min
+        outcome:
+          type: str
+          shape: ['*']
+          m_annotations:
+            tabular:
+              name: outcome
+
+data:
+  m_def: GrillSessions
+  data_file: grill_sessions.csv

@@ -216,6 +216,40 @@ the NORTH-jupyter plugin entry point, set `meta.deployment_url` /
 `meta.maintainer_email` to local values. Kept
 `oasis.uses_central_user_management: true` and `temporal.enabled: true`.
 
+## Phase 1 implementation notes (2026-09-09)
+
+1. **Shipped example uploads do not work in this image.** The entry points are
+   registered (they show under `plugin_entry_points` in `/api/v1/info`) but
+   their resource files are not bundled, so processing fails with
+   `AssertionError: Upload resource path "tabular/*" ... could not be found`.
+   We build our own instead, under `examples/` in this repo.
+2. **A failed or deleted upload can leave a Temporal workflow retrying** with
+   backoff, forever, logging a traceback each time (later `KeyError: Upload
+   with id ... does not exist` once the upload is gone). Terminate it:
+   `docker compose run --rm --no-deps --entrypoint temporal
+   temporal-create-namespace workflow terminate --address temporal:7233
+   -n default --workflow-id <id> --reason <text>`. The `temporal` CLI is only
+   in the `temporalio/admin-tools` image, which the `temporal-create-namespace`
+   service already uses. A plain `docker run` of that image is blocked by the
+   sandbox; going through the compose service works.
+3. **Tabular column mode: `Datetime` array columns fail** with `ValueError:
+   Shape mismatch`. Use `type: str` for date columns parsed from a table.
+   The other seven columns (str and `np.float64` with units) parsed fine.
+4. **Single-file schema plus data works well.** One `.archive.yaml` with a
+   `definitions:` block and a `data:` block (`m_def: <LocalSectionName>`,
+   `data_file: <csv>`), uploaded together with the CSV, auto-creates one entry
+   and runs the tabular parser. No "create entry from schema" click needed.
+   Base sections: `nomad.datamodel.data.EntryData` and
+   `nomad.parsing.tabular.TableData`.
+5. **Column mode result:** `mapping_mode: column`, `file_mode: current_entry`,
+   `sections: ['#root']` produced one entry of type `GrillSessions` with each
+   CSV column as a length-12 array quantity. Confirmed in the processed
+   archive and in the `nomad_oasis_entries_v1` Elasticsearch index
+   (`published: false`).
+6. **To investigate:** the ES entries index held 17 docs while MongoDB had 1
+   entry. Likely orphaned search docs from the deleted failed uploads. Check
+   whether upload delete fully cleans Elasticsearch.
+
 ## Phased task list
 
 ### Phase 0: setup  [done 2026-09-08]
