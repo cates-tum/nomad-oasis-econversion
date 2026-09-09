@@ -4,7 +4,8 @@ Living record of moving from the Nexus demo to a real NOMAD Oasis for the RDM
 cluster. Nexus stays as the five-minute conceptual on-ramp for the keynote; the
 Oasis distribution is the production target. This file lives in the distribution
 repo (`docs/`) alongside `nomad-oasis-mapping.md` and is updated per phase with
-what actually happened.
+what actually happened. `docs/developers/` turns this record into a self-study
+path: a learning plan, hands-on labs per phase, and per-tool cheat sheets.
 
 ## Goal
 

@@ -40,7 +40,9 @@ each by git tag in `pyproject.toml`.
 - `pyproject.toml` `[project.optional-dependencies].plugins` is the plugin
   list. `uv.lock` pins their exact commits; regenerate with
   `docker run --rm -v "$PWD":/w -w /w ghcr.io/astral-sh/uv:0.9-python3.12-bookworm-slim uv lock`.
-- `docs/` the adoption plan (living record) and the Nexus concept mapping.
+- `docs/` the adoption plan (living record), the Nexus concept mapping, and
+  `developers/` (self-study plan, labs, and per-tool cheat sheets for
+  reproducing Phases 0 to 4 by hand).
 - `examples/` YAML schema prototypes: `grill-sessions/` (tabular column mode),
   `grill-attempt/` (ELN form + row-mode tabular, plus `app-test/` data-only
   archives of the packaged schema used to check the Phase 4 app). Prototype
