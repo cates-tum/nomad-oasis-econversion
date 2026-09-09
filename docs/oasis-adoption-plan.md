@@ -47,8 +47,8 @@ over Python everywhere else.
   (`ui.apps.options`), config only, no rebuild. Locked to the packaged schema,
   seven columns, four filter-menu items, one dashboard widget. Verified in the
   GUI against five entries.
-- Phases 0-4 done. Phase 5 (capture) is the running record; two sub-items open
-  (parser matching write-up, hosting move).
+- Phases 0-4 done. Phase 5 (capture) is the running record; parser-matching
+  and hosting-move write-ups now in the Phase 5 section, hosting not executed.
 - Resolved: the ES-vs-Mongo count mismatch (Phase 1 open item). Both now hold
   16 docs. No orphaned search docs found; upload delete cleaned up as expected.
 
@@ -482,11 +482,101 @@ Phase 3 pushes:
   schema-package tradeoffs, where data sits locally.
 - [~] Update this plan per phase with what actually happened. Ongoing; this
   consolidation pass done 2026-09-09.
-- [ ] How NOMAD matches a file to a parser: not yet written up (Phase 1 used
-  the archive parser via the `.archive.yaml` mainfile; the file-to-parser
-  matching rules for real formats are a Phase 4+ topic).
-- [ ] Eventual hosting move: same distribution repo, separate persistent cloud
-  VM, not the EU demo VM. Not done now.
+- [x] How NOMAD matches a file to a parser: written up below.
+- [x] Hosting move: written up below. Not executed, this is the plan for it.
+
+#### How NOMAD matches a file to a parser
+
+On upload, NOMAD walks every file and calls `match_parser(path)`
+(`nomad/parsing/parsers.py`) on each. A file that matches becomes a *mainfile*
+and produces one entry (or several child entries); a file that matches nothing
+stays a raw file with no entry.
+
+`match_parser`:
+1. Skip names starting with `.` or `~`.
+2. Read the first 3 bytes for gzip/bz2/xz detection, then read the first
+   `config.process.parser_matching_size` bytes (12000 here) of the
+   decompressed head into a buffer.
+3. Detect the MIME type of that buffer with libmagic. Try to decode it as
+   UTF-8 for regex checks; if binary, guess the encoding.
+4. Try each enabled parser in list order, return the first whose
+   `is_mainfile(...)` passes.
+
+A `MatchingParser` passes when every configured check passes (unset checks are
+skipped):
+- `mainfile_binary_header` / `_re`: literal bytes or a byte regex present in
+  the head.
+- `mainfile_contents_re`: regex found in the decoded text head.
+- `mainfile_mime_re`: matches the detected MIME type (default `text/.*`).
+- `supported_compressions`: a compressed file matches only if the parser lists
+  its scheme.
+- `mainfile_name_re`: fullmatch on the filename (default `.*`).
+  `mainfile_alternative: true` lets a file match through a sibling with the
+  same basename.
+- `mainfile_contents_dict`: structural match into JSON / HDF5 / CSV / Excel /
+  NetCDF content (`__has_key`, `__has_all_keys`, `__has_only_keys`, or value
+  equality).
+
+`level` orders parsers, lower first (`parsers/archive` is `level -1`). Normal
+processing runs `strict=True`, which skips the artificial empty / missing
+parsers.
+
+This image installs `nomad-lab` core, one schema-package plugin, and no parser
+plugins, so only three parsers are active:
+
+| Parser | `level` | Filename regex | MIME |
+|---|---|---|---|
+| `parsers/tabular` | 0 | `.*\.archive\.(csv\|xlsx?)$` | `text/.*` or `application/.*` |
+| `parsers/archive` | -1 | `.*(archive\|metainfo)\.(json\|yaml\|yml)$` | `.*` |
+| `parsers/broken` | 0 | fallback when a file raises during matching |
+
+So in Phases 1 to 4 every entry came from `parsers/archive` matching the
+`*.archive.yaml` mainfile by name. The `tabular_parser` annotations inside
+those archives are executed by the archive parser, not by `parsers/tabular`
+(that one is for a bare `*.archive.csv` uploaded on its own). A real instrument
+format (`.out`, `.h5`, a vendor binary) yields no entry until a parser plugin
+that matches it is pinned in `pyproject.toml` and the image is rebuilt. That is
+the "parser plugin only if forced" path in "Onboarding a new lab".
+
+#### Hosting move
+
+Target: run the same distribution repo on a dedicated persistent VM, not the EU
+cloud VM that serves the live keynote demo. Adding Elasticsearch, MongoDB, app,
+and worker to the demo VM risks running that demo out of memory.
+
+Carries over unchanged:
+- The repo is the deployment. `git pull` on the server, then
+  `docker compose up -d app worker proxy`. No per-host code.
+- Central Keycloak (`uses_central_user_management: true`) already needs no
+  local identity service, so there is no auth setup on the new host.
+- All customization stays in `configs/nomad.yaml`, `configs/nginx_base_conf`,
+  `configs/branding/`, and the pinned plugin tags, all bind-mounted.
+  `docker compose up -d --no-deps --force-recreate app worker` applies a config
+  change with no rebuild.
+
+Changes for a real host:
+- Image source. Either keep building locally or let CI publish. CI push to GHCR
+  is gated to `vX.Y.Z` tags and needs package write granted once (repo
+  Settings > Actions > General > Workflow permissions > Read and write, see the
+  CI note above). The server then does `docker compose pull` instead of a local
+  build.
+- `services.api_host` and `services.api_base_path` in `nomad.yaml`, and
+  `server_name` in `configs/nginx_http.conf`, move from `localhost` to the real
+  hostname.
+- TLS. The template ships `configs/nginx_https.conf` and commented cert mounts
+  in `docker-compose.yaml`. Point the proxy at the HTTPS conf and mount real
+  certs (Let's Encrypt or the cluster CA).
+- `mongo` is pinned to `7.0` only for this VM's kernel (SERVER-121912). A host
+  on kernel >= 7.0.14 can move back to `mongo:8.0`.
+- Data is in `./.volumes/fs` (bind mount, uid 1000) plus named Docker volumes
+  for Mongo, Elasticsearch, PostgreSQL. Back these up; on a server put
+  `.volumes/fs` on a real data mount, not the repo checkout.
+- Resources: the stack idles near 5.7 GiB RAM and is tight under load on
+  10 GiB. Size the host above that and raise the Elasticsearch heap (capped at
+  512 MiB in `docker-compose.yaml`) if there is room.
+- NORTH and logtransfer stay off. Turn NORTH on only if a lab needs in-browser
+  tools: uncomment the NORTH block in `configs/nginx_base_conf` and set
+  `north.enabled: true`.
 
 ## How the Nexus concepts carry over
 
