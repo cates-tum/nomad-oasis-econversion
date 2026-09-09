@@ -456,6 +456,24 @@ Phase 4 branding (2026-09-09), GUI identity as "eConversion Nexus":
   (Firefox: `about:debugging` > This Firefox > Service Workers) and clear the
   site data, or just use a private window.
 
+CI fixes (2026-09-09), `.github/workflows/docker-publish.yml` was red since the
+Phase 3 pushes:
+- **Plugin unit tests failed with `No module named pytest`.** The
+  `nomad-plugin-tests` step clones each installed plugin repo, builds a venv,
+  and runs `pytest` on it. `nomad-econversion-plugins` ships no pytest suite
+  and no tests, so it errored. Fix: added `nomad_econversion_plugins` to
+  `PLUGIN_TESTS_PLUGINS_TO_SKIP`. Remove it once the plugin repo has real
+  tests.
+- **Docker push to GHCR failed with `permission_denied: read_package`.** The
+  repo's `default_workflow_permissions` is `read`, so `GITHUB_TOKEN` cannot
+  write packages. Fix (chosen): build the image on every branch push but
+  `push: ${{ github.ref_type == 'tag' }}`, and gate the `run_tests` job (which
+  pulls the pushed image) on `github.ref_type == 'tag'`. CI no longer needs
+  package write for day-to-day work; the image is built locally by hand during
+  prototyping anyway. Before the first `vX.Y.Z` tag for a hosting move, grant
+  CI package write: repo Settings > Actions > General > Workflow permissions >
+  Read and write. The image boot / health test now runs only at tag time.
+
 ### Phase 5: capture what you learned
 - [x] `CLAUDE.md` for the repo: layout, how to add a plugin, how to rebuild the
   image. Written in Phase 0, current.
