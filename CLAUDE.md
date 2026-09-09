@@ -20,7 +20,14 @@ each by git tag in `pyproject.toml`.
   plain `restart` is not enough: an editor save swaps the file inode and the
   container keeps the old one (Phase 4 note).
 - `configs/nginx_base_conf` shared nginx location blocks. The
-  `/nomad-oasis/north/` block is commented out (NORTH is off).
+  `/nomad-oasis/north/` block is commented out (NORTH is off). An exact-match
+  302 sends the GUI root to the `grill-attempts` app instead of the About page.
+- `configs/branding/` placeholder "eConversion Nexus" GUI images
+  (`nomad-text.png`, `nomad-oasis.png`, `nomad.png`, favicons), bind-mounted
+  `:ro` on the `app` service over the stock files at
+  `.../site-packages/nomad/app/static/gui/`. Mount the source path, not
+  `run/gui_configured` (rebuilt on every `app` start). Regenerate with
+  `python3 scripts/make-branding.py`.
 - `docker-compose.yaml` the stack. Long-running services we run locally:
   `elastic mongo postgresql temporal worker app proxy`, plus one-shot
   `temporal-setup-db` and `temporal-create-namespace`. `north` and
@@ -35,11 +42,13 @@ each by git tag in `pyproject.toml`.
   `docker run --rm -v "$PWD":/w -w /w ghcr.io/astral-sh/uv:0.9-python3.12-bookworm-slim uv lock`.
 - `docs/` the adoption plan (living record) and the Nexus concept mapping.
 - `examples/` YAML schema prototypes: `grill-sessions/` (tabular column mode),
-  `grill-attempt/` (ELN form + row-mode tabular). Prototype here before
-  promoting to the plugin repo.
+  `grill-attempt/` (ELN form + row-mode tabular, plus `app-test/` data-only
+  archives of the packaged schema used to check the Phase 4 app). Prototype
+  here before promoting to the plugin repo.
 - `.volumes/fs` raw and processed files at rest (bind mount, owned by uid
   1000). Mongo, Elasticsearch, PostgreSQL keep named Docker volumes.
 - `scripts/generate-env.sh` writes `.env` and `.env.north` (both gitignored).
+  `scripts/make-branding.py` rebuilds the `configs/branding/` placeholder images.
 - `.github/workflows/docker-publish.yml` CI builds and pushes the image to
   GHCR on push to `main`.
 
@@ -92,6 +101,11 @@ Stop: `docker compose down` (add `-v` to also wipe the named volumes).
 1. YAML ELN schema uploaded as data, no rebuild. Prototype in `examples/`.
 2. `tabular_parser` annotations for CSV or Excel, no rebuild.
 3. App entry point or `ui.apps` in `nomad.yaml`, config only, no rebuild.
+   Worked example: `ui.apps.options.grill_attempts`, locked to the packaged
+   schema. Custom schema quantities are searchable as
+   `data.<name>#<section-qualified-name>` with no extra annotation. GUI
+   branding limits and the logo-swap mechanism are in the Phase 4 branding note
+   in `docs/oasis-adoption-plan.md`.
 4. Promote a stable YAML schema to a Python schema-package plugin:
    - In `nomad-econversion-plugins`: add a section class under
      `src/nomad_econversion_plugins/schema_packages/`, an entry point in

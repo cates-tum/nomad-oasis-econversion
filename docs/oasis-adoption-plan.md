@@ -391,8 +391,8 @@ Phase 3 notes:
   a four-item filter menu (protein_class / heat_source / outcome terms plus a
   grill_temp histogram), one dashboard terms widget on `outcome`.
 - [x] Appears in the explore menu under category "Use Cases" next to the stock
-  apps. Not set as the landing view (`ui.apps` has no default-app key in 1.4.3;
-  a landing override is a separate `ui` change, deferred).
+  apps. `ui.apps` has no default-app key in 1.4.3, so it is made the landing
+  view with an nginx redirect instead (see the branding note below).
 - [x] Fixture: `examples/grill-attempt/app-test/`, four data-only
   `.archive.yaml` entries of the packaged schema, uploaded through the GUI, all
   `SUCCESS`. Checked the app against those four plus the Phase 3 packaged entry
