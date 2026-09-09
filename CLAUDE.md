@@ -2,9 +2,14 @@
 
 A NOMAD Oasis **distribution** (from `FAIRmat-NFDI/nomad-distro-template`) for
 the RDM cluster, run locally via Docker Compose during the prototyping phase.
-NOMAD core is never forked. Customization is YAML schemas, `configs/nomad.yaml`,
-and the built-in tabular parser first; Python plugins only when a file format
-forces it.
+NOMAD core is never forked. Prototype schemas as YAML (`configs/nomad.yaml` +
+uploaded `.archive.yaml`, no rebuild), promote stable ones to Python
+schema-package plugins in the shared plugin repo. Python *parser* plugins only
+when a file format forces it.
+
+Companion repo: `cates-tum/nomad-econversion-plugins` (public) holds the Python
+schema/parser plugins, one `nomad.plugin` entry point each. This distro pins
+each by git tag in `pyproject.toml`.
 
 ## Layout
 
@@ -19,9 +24,17 @@ forces it.
   `temporal-setup-db` and `temporal-create-namespace`. `north` and
   `logtransfer` exist but stay down.
 - `Dockerfile` builds `ghcr.io/cates-tum/nomad-oasis-econversion:main` from
-  `python:3.12-slim` + `uv` installing `nomad-lab` and this repo's plugins,
-  plus a built copy of the NOMAD docs.
-- `docs/` the adoption plan and the Nexus concept mapping.
+  `python:3.12-slim` + `uv sync --extra plugins` (installs `nomad-lab` and the
+  plugins listed in `pyproject.toml`), plus a built copy of the NOMAD docs. The
+  builder mounts only `pyproject.toml`, `uv.lock`, `.git`, so plugins must be
+  installable packages (PyPI or `git+https`), never local paths.
+- `pyproject.toml` `[project.optional-dependencies].plugins` is the plugin
+  list. `uv.lock` pins their exact commits; regenerate with
+  `docker run --rm -v "$PWD":/w -w /w ghcr.io/astral-sh/uv:0.9-python3.12-bookworm-slim uv lock`.
+- `docs/` the adoption plan (living record) and the Nexus concept mapping.
+- `examples/` YAML schema prototypes: `grill-sessions/` (tabular column mode),
+  `grill-attempt/` (ELN form + row-mode tabular). Prototype here before
+  promoting to the plugin repo.
 - `.volumes/fs` raw and processed files at rest (bind mount, owned by uid
   1000). Mongo, Elasticsearch, PostgreSQL keep named Docker volumes.
 - `scripts/generate-env.sh` writes `.env` and `.env.north` (both gitignored).
@@ -70,14 +83,19 @@ Stop: `docker compose down` (add `-v` to also wipe the named volumes).
   placeholders and sets the image name. Pull it before working.
 - ~10 GiB VM RAM, ~5.7 GiB used by the stack. Fits, tight under load.
 
-## Add a plugin (later phases)
+## Add a schema, cheapest first
 
-1. YAML ELN schema uploaded as data, no rebuild.
+1. YAML ELN schema uploaded as data, no rebuild. Prototype in `examples/`.
 2. `tabular_parser` annotations for CSV or Excel, no rebuild.
-3. App entry point or `ui.apps` in `nomad.yaml`, config only.
-4. Schema-package plugin: `src/<pkg>/schema_packages/`, `pyproject.toml`
-   `nomad.plugin` entry point, add to `[project.optional-dependencies].plugins`,
-   rebuild the image, `docker compose up -d`.
+3. App entry point or `ui.apps` in `nomad.yaml`, config only, no rebuild.
+4. Promote a stable YAML schema to a Python schema-package plugin:
+   - In `nomad-econversion-plugins`: add a section class under
+     `src/nomad_econversion_plugins/schema_packages/`, an entry point in
+     `schema_packages/__init__.py` and `pyproject.toml`, commit, `git tag vX.Y.Z`.
+   - Here: bump the `@vX.Y.Z` ref in `pyproject.toml` plugins, `uv lock`,
+     rebuild the image, `docker compose up -d app worker proxy`.
+   - Verify: `curl localhost/nomad-oasis/api/v1/info` shows the package and
+     entry point.
 
 ## Conventions
 

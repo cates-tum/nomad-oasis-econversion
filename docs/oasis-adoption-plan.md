@@ -1,18 +1,50 @@
 # NOMAD Oasis adoption plan
 
-Working brief for moving from the Nexus demo to a real NOMAD Oasis for the RDM
+Living record of moving from the Nexus demo to a real NOMAD Oasis for the RDM
 cluster. Nexus stays as the five-minute conceptual on-ramp for the keynote; the
-Oasis distribution is the production target. Copy this file into the new
-distribution repo as its starting brief, alongside `nomad-oasis-mapping.md`.
+Oasis distribution is the production target. This file lives in the distribution
+repo (`docs/`) alongside `nomad-oasis-mapping.md` and is updated per phase with
+what actually happened.
 
 ## Goal
 
 A NOMAD Oasis "distribution": a private git repo, created from
-`nomad-distro-template`, that pins the base image, the installed plugins, the
-config, and the compose files. All customization happens here as plugins and
-`nomad.yaml`. NOMAD core is never forked or edited. Prefer YAML schemas,
-configuration, and the built-in tabular parser over Python, until a real file
-format forces a Python parser.
+`FAIRmat-NFDI/nomad-distro-template`, that pins the base image, the installed
+plugins, the config, and the compose files. All customization happens through
+plugins and `nomad.yaml`. NOMAD core is never forked or edited.
+
+Schema strategy: prototype every schema as YAML (uploaded as data, no rebuild),
+and promote it to a Python schema-package plugin once it is stable and shared,
+for versioning and reuse. Write a Python *parser* plugin only when a real file
+format forces it. Prefer `nomad.yaml` config and the built-in tabular parser
+over Python everywhere else.
+
+## Decisions made
+
+| Decision | Choice | Rationale |
+|---|---|---|
+| Task orchestration | Temporal + PostgreSQL (as shipped by the template) | Not a choice, the template moved off RabbitMQ/Celery. See Phase 0 notes. |
+| User management | Central NOMAD Keycloak (`uses_central_user_management: true`) | No working self-hosted Keycloak in the template; central works offline-local. |
+| MongoDB version | Pinned `mongo:7.0` | 8.0 aborts on this VM kernel 7.0.0 (SERVER-121912). Revert at kernel >= 7.0.14. |
+| Minimal service set | `elastic mongo postgresql temporal worker app proxy` + 2 temporal init jobs | NORTH and logtransfer off; nothing we run depends on them. |
+| Custom image | Built locally with `docker build --target final`, tagged as the compose `image:` | Template has no `build:` key; CI publishes to GHCR, local build avoids a PAT. |
+| Plugin repo structure | **One shared plugin repo** `cates-tum/nomad-econversion-plugins` (public), one `nomad.plugin` entry point per schema/parser | Split a plugin out only when it needs an external maintainer, a divergent release cadence, or has grown large. Extraction later is a `git filter-repo`, not a rewrite. FAIRmat splits by domain/team, not by section. |
+| Plugin pinning | `git+https://...@vX.Y.Z` tag in the distro `pyproject.toml`, `uv lock` to pin the commit | Reproducible; public repo needs no build credentials. |
+| Config edits | `configs/nomad.yaml` bind-mounted into `app`/`worker` for `docker compose restart` iteration | Baked into the image at build otherwise. |
+
+## Current state (end of Phase 3, 2026-09-09)
+
+- Distro repo `cates-tum/nomad-oasis-econversion` (private), at tag `v0.1.0`.
+  Local image `ghcr.io/cates-tum/nomad-oasis-econversion:main` built with the
+  plugin. Stack runs locally; GUI at `http://localhost/nomad-oasis/gui/`,
+  central login working.
+- Plugin repo `cates-tum/nomad-econversion-plugins` (public), tag `v0.1.0`
+  (`dcb6e210`). One entry point: `grill_attempt` -> `GrillAttempt` schema.
+- `examples/` holds the YAML prototypes: `grill-sessions/` (tabular column
+  mode) and `grill-attempt/` (ELN form + row-mode tabular).
+- Phases 0-3 done. Phase 4 (custom app) and Phase 5 (capture) pending.
+- Open item: Elasticsearch entries index accumulated more docs than MongoDB has
+  entries. Check whether upload delete fully cleans the index.
 
 ## Oasis as a plant: the components
 
@@ -76,9 +108,10 @@ NOMAD source. Plugin entry-point types, in rough order of effort:
 | normalizer, dashboard, NORTH tool, API | derived data, embedded mini-apps, in-browser tools, extra endpoints | varies |
 
 Compatibility is protected by staying on this ladder: YAML schema and tabular
-parser and app config before any Python; Python plugins live in the
-distribution repo; the base image tag is bumped to upgrade and the plugins ride
-along.
+parser and app config before any Python. Python plugins live in the shared
+plugin repo (`nomad-econversion-plugins`), not in NOMAD core and not inline in
+the distribution; the distribution pins each by git tag in `pyproject.toml`.
+The base image tag is bumped to upgrade and the plugins ride along.
 
 ## How far UI customization goes
 
@@ -100,9 +133,10 @@ blank-slate rewrite.
 
 ## What to keep for the cluster
 
-Keep: the five core services, schema-driven entries, the search UI narrowed by
-per-domain apps, YAML ELN forms for the spreadsheet and paper labs, the tabular
-parser for CSV-export labs, central user management.
+Keep: the seven core services (`elastic mongo postgresql temporal worker app
+proxy`), schema-driven entries, the search UI narrowed by per-domain apps, YAML
+ELN forms for the spreadsheet and paper labs, the tabular parser for CSV-export
+labs, central user management.
 
 Defer: NORTH, self-hosted Keycloak, publishing to the central repository,
 custom binary-format parsers (only when a specific lab needs one).
@@ -122,8 +156,10 @@ custom binary-format parsers (only when a specific lab needs one).
 4. Write a parser plugin only if forced, for a native or binary format. This is
    the instrument-integration step and the most work. Defer until one or two
    labs actually hit the wall.
-5. Promote the stable YAML schema to a schema-package plugin in the
-   distribution repo once it is shared, so it is versioned and tested.
+5. Promote the stable YAML schema to a Python schema-package plugin in the
+   shared plugin repo (`nomad-econversion-plugins`) once it is shared, so it is
+   versioned and tested. Pin it in the distribution `pyproject.toml` by tag and
+   rebuild the image. See Phase 3 notes for the loop.
 
 eLab integration is a parallel track, not step 1. If a lab already lives in
 elabFTW, NOMAD imports elabFTW exports (shown under "ElabFTW Project Import" on
@@ -151,8 +187,10 @@ phase.
   is not. When persistence is wanted, deploy the same distribution repo to a
   separate cloud VM, not the demo one.
 
-Resource note: give the VirtualBox VM at least 8 GB RAM. Elasticsearch is the
-hungry one.
+Resource note (measured in Phase 0): 10 GiB VM RAM is the practical floor, not
+8. The stack uses ~5.7 GiB idle on this VM and is tight under processing load.
+Build plus images cost ~16 GiB disk. Elasticsearch is the hungry one; its heap
+is already capped at 512 MiB in `docker-compose.yaml`.
 
 ## Phase 0 implementation notes (2026-09-08)
 
@@ -331,7 +369,7 @@ Phase 3 notes:
   must be an installable package (PyPI or git URL), never a local path, unless
   the Dockerfile is changed. Public `git+https@tag` needs no build credentials.
 - `uv.lock` must be regenerated locally before a local build; `uv sync` fails
-  on a stale lock. CI's `update-lockfile` job also does this on push.
+  on a stale lock. The CI `update-lockfile` job also does this on push.
 - Iteration loop is slower than YAML: edit `grill.py` -> tag `v0.1.N` in the
   plugin repo -> bump the `@v0.1.N` ref in the distro -> `uv lock` -> rebuild
   -> `up`. So prototype a schema in YAML, promote to the package when stable.
@@ -347,14 +385,18 @@ Phase 3 notes:
 - Commit
 
 ### Phase 5: capture what you learned
-- `CLAUDE.md` for the repo: how the distribution is laid out, how to add a
-  plugin, how to rebuild the image
-- Memory notes: the plugin entry-point mechanism, YAML schema versus schema
-  package tradeoffs, how NOMAD matches a file to a parser, where data physically
-  sits locally
-- Update this plan with what actually happened versus what was planned
-- Note the eventual hosting move (same distribution repo, separate cloud VM),
-  not done now
+- [x] `CLAUDE.md` for the repo: layout, how to add a plugin, how to rebuild the
+  image. Written in Phase 0, current.
+- [x] Memory notes: `oasis-adoption-project`, `what-processed-means`,
+  `plugin-mechanism`. Cover the plugin entry-point mechanism, YAML vs
+  schema-package tradeoffs, where data sits locally.
+- [~] Update this plan per phase with what actually happened. Ongoing; this
+  consolidation pass done 2026-09-09.
+- [ ] How NOMAD matches a file to a parser: not yet written up (Phase 1 used
+  the archive parser via the `.archive.yaml` mainfile; the file-to-parser
+  matching rules for real formats are a Phase 4+ topic).
+- [ ] Eventual hosting move: same distribution repo, separate persistent cloud
+  VM, not the EU demo VM. Not done now.
 
 ## How the Nexus concepts carry over
 
