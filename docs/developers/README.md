@@ -9,22 +9,27 @@ not understand.
 
 | Path | Purpose |
 |---|---|
-| `learning-plan.md` | The self-study plan: 12 modules in 3 tiers, in order, with concepts, resources, and checkpoints. Start here. |
-| `labs/` | Hands-on walkthroughs. Each reproduces one phase of the adoption plan and ends with a challenge. |
+| `learning-plan.md` | The self-study plan: 15 modules in 5 tiers, in order, with concepts, resources, and checkpoints. Start here. |
+| `sprint-schedule.md` | The same plan laid out day by day for a concentrated block, about 15 sessions at 4 hours, with the gating checkpoint per session. |
+| `labs/` | Hands-on walkthroughs. Labs 0 to 5 reproduce one phase of the adoption plan each. Labs 6 and 7 go one tier further, into the API and the source. Each ends with a challenge. |
 | `cheatsheets/` | Command and concept reference per tool. Not tutorials. Look here while you work. |
 
 ## How to use it
 
 1. Read `learning-plan.md` top to bottom once, so you know the shape of the
    whole thing.
-2. Work the modules in order. Do not skip Tier 1 even if parts feel basic; the
+2. For a concentrated block, follow `sprint-schedule.md`: it orders the modules
+   into ~15 four-hour sessions and names the checkpoint that gates each one.
+   For part-time study, work straight from `learning-plan.md` at your own pace.
+3. Work the modules in order. Do not skip Tier 1 even if parts feel basic; the
    later tiers assume the Docker and Compose model is solid.
-3. Each module points to a lab. Do the lab. Do the challenge at the end without
+4. Each module points to a lab. Do the lab. Do the challenge at the end without
    looking at the walkthrough.
-4. Keep the matching cheat sheet open while you work.
-5. When a lab step matches something the team already did, it cites the commit
+5. Keep the matching cheat sheet open while you work.
+6. When a lab step matches something the team already did, it cites the commit
    or the section of `oasis-adoption-plan.md`. That file is the record of what
-   happened; these labs are how you repeat it.
+   happened; these labs are how you repeat it. Labs 6 and 7 are new depth labs
+   marked draft; refine their exact snippets on your first run.
 
 ## Prerequisites
 

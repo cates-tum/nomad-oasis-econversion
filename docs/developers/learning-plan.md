@@ -1,12 +1,17 @@
 # Self-study plan
 
-Reproduce Phases 0 to 4 of `docs/oasis-adoption-plan.md` by hand. Twelve
-modules in three tiers. Each module lists the concepts, what to read, the lab
-that exercises it, and a checkpoint you should be able to pass before moving
-on.
+Reproduce Phases 0 to 4 of `docs/oasis-adoption-plan.md` by hand, then go one
+tier past them to full manual control of the API and the source. Fifteen
+modules in five tiers (Tier 0 and Tier 4 were added for the manual-control
+goal; Tiers 1 to 3 are the phase reproduction). Each module lists the
+concepts, what to read, the lab that exercises it, and a checkpoint you should
+be able to pass before moving on.
 
-Rough budget: 30 to 35 hours, concept reading plus labs, spread over two to
-four weeks part time. Tier 1 is the largest lift if containers are new to you.
+Rough budget: 55 to 60 hours, concept reading plus labs. At 4 hours a day that
+is about 15 sessions. `sprint-schedule.md` lays those sessions out day by day
+with the gating checkpoint for each. Tier 1 is the largest lift if containers
+are new to you; Tier 4 is the second largest if reading an unfamiliar codebase
+is new.
 
 ## Bridge from a data science background
 
@@ -33,6 +38,45 @@ tools onto what you know:
 | 3 Python plugin | `pyproject.toml`, entry points, `uv` and lockfiles, git tags, dependency pinning | 9 |
 | 4 custom app and branding | `ui.apps` config model, pydantic validation, nginx redirects, static overrides | 10, 11 |
 | CI fixes | GitHub Actions, `gh` CLI, GHCR permissions | 12 |
+
+Module 0 and Tier 4 are not tied to a phase. Module 0 is the one cross-cutting
+concept every service uses. Tier 4 is the depth pass for full manual control:
+driving the whole system through the API as an authenticated user, and reading
+the app, worker, and parser source. The Phase 5 parser-matching write-up in
+`oasis-adoption-plan.md` is the source-reading exercise for Module 14.
+
+---
+
+# Tier 0: how the parts talk
+
+## Module 0: HTTP and the request lifecycle
+
+Concepts: client and server; the request and response cycle; URL parts (scheme,
+host, port, path, query string); HTTP methods and their meaning (`GET` read,
+`POST` create or query, `PUT`/`PATCH` update, `DELETE` remove); status classes
+and the specific codes you will see here (`200 201 204`, `301 302`, `400 401
+403 404 409 422`, `500 502 503`); headers (`Host`, `Content-Type`, `Accept`,
+`Authorization`, `Set-Cookie`); the request body and JSON payloads; `curl` in
+depth (`-i -v -s`, `-X`, `-H`, `-d` / `--data-binary`, `-u`, `-L`, `-o`, `-w
+'%{http_code}'`, `-G --data-urlencode`); what changes when a reverse proxy
+sits in front (the client sees the proxy, the proxy sees the app); REST in one
+line; OpenAPI as a machine-readable description of an API.
+
+Why here: every service in this stack speaks HTTP. You talk to nginx, the NOMAD
+app, Elasticsearch, and Temporal over it. `curl -s localhost/nomad-oasis/alive`
+is HTTP. Modules 7, 11, and all of Tier 4 assume you read a response envelope
+without thinking about it.
+
+Read: MDN "An overview of HTTP" and "HTTP response status codes"
+(https://developer.mozilla.org/en-US/docs/Web/HTTP). `man curl`.
+`cheatsheets/http.md`.
+
+Lab: folded into Lab 0 (the health check) and Lab 1 (first API calls). No
+standalone lab.
+
+Checkpoint: given a raw `curl -i` response, name the status class, say what the
+`Content-Type` header tells you, and write from memory the `curl` command that
+sends a JSON `POST` body with a bearer token.
 
 ---
 
@@ -331,6 +375,101 @@ the cause, and say whether the fix is a code change or a settings change.
 
 ---
 
+# Tier 4: control the API and read the source
+
+Goal: drive the whole system from `curl` as an authenticated user, and read the
+app, worker, and parser code well enough to predict behavior and debug it
+without adding print statements first.
+
+## Module 13: The NOMAD API and Keycloak auth by hand
+
+Concepts, FastAPI as NOMAD uses it: a path operation (one function bound to a
+method and path); path vs query vs body parameters; Pydantic models as the
+request and response schema, and the `422` you get when a body fails
+validation; `Depends` for shared logic like auth; routers and path prefixes;
+the interactive docs page and the raw `openapi.json` the server publishes.
+
+Concepts, the NOMAD API surface: `GET /api/v1/info` (versions, plugins, and the
+Keycloak `server_url`, `realm_name`, `client_id`); `POST /api/v1/entries/query`
+with the NOMAD query language in the JSON body (`and` `or` `not`, ranges with
+`gte`/`lte`, `owner` one of `public` `user` `all`, `pagination`, `required` to
+pull only part of the archive); `GET /api/v1/entries/{entry_id}/archive`; the
+`/api/v1/uploads` group (create, `PUT` a file, get processing status, publish,
+delete); how the API sits over Mongo and Elasticsearch (Module 7).
+
+Concepts, auth: OAuth2 and OIDC in one paragraph (resource owner, client,
+authorization server, resource server); why this Oasis uses central
+`nomad-lab.eu` Keycloak and needs no local identity service; the token
+endpoint; getting an access token with `curl` (direct-access-grant password
+flow if the client allows it, otherwise the browser code flow and lifting the
+token from the GUI network tab); the `Authorization: Bearer <token>` header;
+token expiry, the refresh token; decoding a JWT payload with base64url to read
+`sub`, `preferred_username`, `exp`; how the same query returns nothing
+anonymously and your unpublished entries once the token is attached with
+`owner: user`.
+
+Why here: Phase 5 and the hosting move need you to check system state without a
+browser, and "full manual control" means the API is yours end to end. This is
+also where FastAPI and Pydantic stop being words on a page.
+
+Read: FastAPI tutorial, "First Steps" through "Request Body"
+(https://fastapi.tiangolo.com/tutorial/). NOMAD docs, "Using the API"
+(https://nomad-lab.eu/prod/v1/docs/), and the live `openapi.json` and docs page
+on your own Oasis. Keycloak "Server Administration, OIDC" overview
+(https://www.keycloak.org/documentation). `cheatsheets/nomad-api.md` and
+`cheatsheets/keycloak-auth.md`.
+
+Lab: Lab 6.
+
+Checkpoint: from a cold stack, using only `curl`, get a bearer token, create an
+upload, add a file, wait for it to process, query the entry by a custom
+quantity, and fetch one section of its archive. Say what a `401`, a `403`, and
+a `422` from the API each mean.
+
+## Module 14: Async Python and reading the NOMAD source
+
+Concepts, async: the event loop; `async def`, `await`, a coroutine;
+concurrency vs parallelism; async helps IO-bound work and does nothing for
+CPU-bound work; blocking the loop is a bug; how FastAPI runs a sync path
+operation in a threadpool so it does not block; why parsing runs in the
+`worker` (a Temporal activity), not in the `app` event loop.
+
+Concepts, reading a codebase you did not write: find the installed package
+inside the container
+(`docker compose exec app python -c "import nomad, os;
+print(os.path.dirname(nomad.__file__))"`); navigate with `grep -rn` and an
+editor; follow imports inward from an entry point; the shape of the NOMAD tree,
+`nomad/app/` (the FastAPI app and routers), `nomad/processing/` (the
+processing workflow and activities), `nomad/parsing/parsers.py` (`match_parser`
+and `MatchingParser`), `nomad/metainfo/` (the section and quantity machinery),
+`nomad/config/` (the Pydantic settings models that `configs/nomad.yaml`
+populates).
+
+Concepts, the parser path: read `match_parser` against the "How NOMAD matches a
+file to a parser" write-up in `oasis-adoption-plan.md` (the byte-header read,
+libmagic MIME detection, the ordered `is_mainfile` checks, `level`,
+`strict=True`); what a parser plugin must provide (`is_mainfile`,
+`parse(mainfile, archive, logger)`, a `nomad.parser` entry point); read one
+small real parser plugin top to bottom.
+
+Why here: the next phase reads and may write parser code. You cannot honor "a
+parser plugin only when a file format forces it" without being able to read
+what one does.
+
+Read: Real Python "Async IO in Python" (https://realpython.com/async-io-python/).
+FastAPI "Concurrency and async / await" (https://fastapi.tiangolo.com/async/).
+The NOMAD source paths above, in the running container. `cheatsheets/nomad-concepts.md`
+parser section.
+
+Lab: Lab 7.
+
+Checkpoint: name the file and function where an uploaded file is matched to a
+parser, the file where the entries query route is defined, and the Pydantic
+model class that `configs/nomad.yaml`'s `ui.apps` block is validated against.
+Explain why a slow parser does not freeze the API.
+
+---
+
 ## Glossary
 
 - **image**: a built, immutable filesystem plus metadata. A container is a
@@ -349,9 +488,20 @@ the cause, and say whether the fix is a code change or a settings change.
   activities. It survives worker restarts and retries failures.
 - **lockfile**: a file pinning every dependency to an exact version and hash so
   a build is reproducible.
+- **path operation (FastAPI)**: one Python function bound to an HTTP method and
+  URL path. The unit a FastAPI app is built from.
+- **bearer token**: a string in the `Authorization: Bearer ...` header that
+  proves who you are. Whoever holds it can use it, so it is short-lived.
+- **JWT**: a bearer token that is three base64url parts joined by dots. The
+  middle part is a readable JSON payload with fields like `sub` and `exp`.
+- **event loop**: the single thread that runs async code, switching between
+  coroutines whenever one is waiting on IO.
+- **coroutine**: a function defined with `async def`. It runs on the event loop
+  and yields control at each `await`.
 
 ## Reading list, one link per tool
 
+- HTTP: MDN HTTP guide, https://developer.mozilla.org/en-US/docs/Web/HTTP
 - Shell and git: MIT Missing Semester, https://missing.csail.mit.edu/
 - git in depth: Pro Git, https://git-scm.com/book
 - Docker: https://docs.docker.com/get-started/
@@ -363,4 +513,7 @@ the cause, and say whether the fix is a code change or a settings change.
 - Elasticsearch: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html
 - MongoDB shell: https://www.mongodb.com/docs/mongodb-shell/
 - Temporal: https://learn.temporal.io/
+- FastAPI: https://fastapi.tiangolo.com/tutorial/
+- Async Python: https://realpython.com/async-io-python/
+- Keycloak / OIDC: https://www.keycloak.org/documentation
 - NOMAD: https://nomad-lab.eu/prod/v1/docs/
